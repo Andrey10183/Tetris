@@ -3,12 +3,12 @@
     public class GameEngineEventArgs
     {
         public bool[,] _gamefield;
-        public int _score;
+        public int _rowsCompleeted;
 
-        public GameEngineEventArgs(bool[,] gamefield, int score)
+        public GameEngineEventArgs(bool[,] gamefield, int rowsCompleeted = 0)
         {
             _gamefield = gamefield;
-            _score = score;
+            _rowsCompleeted = rowsCompleeted;
         }
     }
 }

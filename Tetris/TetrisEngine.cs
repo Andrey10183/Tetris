@@ -7,13 +7,16 @@ namespace Tetris
         public delegate void EventHandler(TetrisEngine sender, GameEngineEventArgs e);
         public event EventHandler? OnRedraw;
         public event EventHandler? OnGameOver;
+        public event EventHandler? OnScoreEarned;
 
-        private int _maxX;
-        private int _maxY;
-        
-        private int _currRotState;
-        private List<List<Point>> _currFigure;
-        private Point _currFigPos;
+        private readonly int width;
+        private readonly int height;
+        private bool[,] field;
+
+        private Random generateFigure = new Random();
+        private int currentRotationState;
+        private List<List<Point>> currentFigurePositions;
+        private Point currentFigurePosition;
         private bool figureFalling = false;
 
         public static Timer _timer;
@@ -32,54 +35,51 @@ namespace Tetris
                 }    
             } 
         }
-
-        public int Score { get; set; }
-
-        private bool[,] field;
-        
-        public TetrisEngine(int maxX = 15, int maxY = 20, int initialspeed = 1000)
+               
+        public TetrisEngine(int width = 15, int height = 20, int initialspeed = 1000)
         {
-            _maxX = maxX;
-            _maxY = maxY;
+            this.width = width;
+            this.height = height;
             _setupSpeed = initialspeed;
-            field = new bool[maxY,maxX];
+            field = new bool[height,width];
         }
 
-        private void TimerCallback(object sender)
+        private void NextFrame(object sender)
         {
-            if (!(figureFalling && CanMoveOrPlace(_currFigure, _currRotState, _currFigPos, new Point(0, 1))))
+            if (!(figureFalling && CanMoveOrPlace(currentFigurePositions, currentRotationState, currentFigurePosition, new Point(0, 1))))
             {
                 //figure fall down - check compleeted rows
                 figureFalling = false;
-                
-                for (int i = _maxY - 1; i >= 0; i--)
+                var rowsCompleted = 0;
+                for (int i = height - 1; i >= 0; i--)
                 {
                     if (IsRowComplete(i))
                     {
                         //Delete row
+                        rowsCompleted++;
                         DeleteRow(i);
                         ShiftFieldContence(i - 1);
                         i++;
                     }
                 }
+                if (rowsCompleted > 0) OnScoreEarned?.Invoke(this, new GameEngineEventArgs(field, rowsCompleted));
             }
 
             if (!figureFalling)
                 InstantiateNewFigure();
 
-            OnRedraw?.Invoke(this, new GameEngineEventArgs(field, Score));
+            OnRedraw?.Invoke(this, new GameEngineEventArgs(field));
         }
         
         private void InstantiateNewFigure()
         {
-            _currRotState = 0;
-            var rndFigure = new Random();
-            _currFigure = Figures.figs[rndFigure.Next(Figures.figs.Count)];
-            _currFigPos = new Point(_maxX / 2, 1);
+            currentRotationState = 0;
+            currentFigurePositions = Figures.figs[generateFigure.Next(Figures.figs.Count)];
+            currentFigurePosition = new Point(width / 2, 1);
             figureFalling = true;
-            if (!CanMoveOrPlace(_currFigure, _currRotState, _currFigPos, new Point(0, 0)))
+            if (!CanMoveOrPlace(currentFigurePositions, currentRotationState, currentFigurePosition, new Point(0, 0)))
             { 
-                OnGameOver?.Invoke(this, new GameEngineEventArgs(field, Score));
+                OnGameOver?.Invoke(this, new GameEngineEventArgs(field));
                 _timer.Change(Timeout.Infinite, Timeout.Infinite);
             }
         }
@@ -88,25 +88,25 @@ namespace Tetris
         {
             InstantiateNewFigure();
 
-            _timer = new Timer(TimerCallback, null, 0, _setupSpeed);
+            _timer = new Timer(NextFrame, null, 0, _setupSpeed);
         }
 
         void DeleteRow(int row)
         {
-            for (int i = 0; i < _maxX; i++)
+            for (int i = 0; i < width; i++)
                 field[row, i] = false;
         }
 
         private void ShiftFieldContence(int row)
         {
             for (int i = row; i >=0; i--)
-                for (int j = 0; j < _maxX; j++)
+                for (int j = 0; j < width; j++)
                     field[i+1, j] = field[i, j];
         }
 
         private bool IsRowComplete(int row)
         {
-            for (var i = 0; i < _maxX; i++)
+            for (var i = 0; i < width; i++)
                 if (!field[row,i]) return false;
             return true;
         }
@@ -115,8 +115,8 @@ namespace Tetris
             field;
 
         private bool IsValid(Point point) =>
-            (point.X >= 0 && point.X < _maxX) &&
-            (point.Y >= 0 && point.Y < _maxY);
+            (point.X >= 0 && point.X < width) &&
+            (point.Y >= 0 && point.Y < height);
 
         private bool CanMoveOrPlace(List<List<Point>> figure,int currRotState, Point currRefPos, Point delta)
         {
@@ -168,8 +168,8 @@ namespace Tetris
             }
             
             Fill(draw, true);
-            _currFigPos = new Point(newRefPosX, newRefPosY);
-            _currRotState = newRotState;
+            currentFigurePosition = new Point(newRefPosX, newRefPosY);
+            currentRotationState = newRotState;
             return true;
         }
 
@@ -181,20 +181,20 @@ namespace Tetris
 
         public void MoveRight()
         {
-            CanMoveOrPlace(_currFigure, _currRotState, _currFigPos, new Point(1, 0));
-            OnRedraw?.Invoke(this, new GameEngineEventArgs(field, Score));
+            CanMoveOrPlace(currentFigurePositions, currentRotationState, currentFigurePosition, new Point(1, 0));
+            OnRedraw?.Invoke(this, new GameEngineEventArgs(field));
         }
 
         public void MoveLeft()
         {
-            CanMoveOrPlace(_currFigure, _currRotState, _currFigPos, new Point(-1, 0));
-            OnRedraw?.Invoke(this, new GameEngineEventArgs(field, Score));
+            CanMoveOrPlace(currentFigurePositions, currentRotationState, currentFigurePosition, new Point(-1, 0));
+            OnRedraw?.Invoke(this, new GameEngineEventArgs(field));
         }
 
         public void Rotate()
         {
-            CanMoveOrPlace(_currFigure, _currRotState, _currFigPos, new Point(1, 1));
-            OnRedraw?.Invoke(this, new GameEngineEventArgs(field, Score));
+            CanMoveOrPlace(currentFigurePositions, currentRotationState, currentFigurePosition, new Point(1, 1));
+            OnRedraw?.Invoke(this, new GameEngineEventArgs(field));
         }
     }
 }

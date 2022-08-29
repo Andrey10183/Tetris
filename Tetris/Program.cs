@@ -1,12 +1,20 @@
 ﻿// See https://aka.ms/new-console-template for more information
-using System.Text;
 using Tetris;
 
-var tetris = new TetrisEngine(10, 20, 500);
-var Visualisation = new TetrisVisualisation(tetris);
-Visualisation.StartVisualization();
-//Console.WriteLine("  ");
-//Console.BackgroundColor=ConsoleColor.White;
-//Console.WriteLine("  ");
-//Console.BackgroundColor = ConsoleColor.Black;
+const int width = 10;
+const int height = 20;
+
+var tetris = new TetrisEngine(width, height, 500);
+
+
+var display = new Display(new GameInfo() {gameField = tetris.getField()}, width, height);
+var gameController = new GameController(tetris, display);
+
+var text = new Dictionary<string, GameInfo>() 
+{ 
+    { "SCORE", gameController.GetGameInfo() }
+};
+
+display.SetupText(text);
+gameController.Start();
 

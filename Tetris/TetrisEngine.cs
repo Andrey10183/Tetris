@@ -1,12 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
-using System.Drawing;
-using System.Linq;
-using System.Runtime.CompilerServices;
-using System.Security.Principal;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Drawing;
 
 namespace Tetris
 {
@@ -20,12 +12,11 @@ namespace Tetris
         private int _maxY;
         
         private int _currRotState;
-        private List<Point> _currFigure;
+        private List<List<Point>> _currFigure;
         private Point _currFigPos;
         private bool figureFalling = false;
 
-
-        public Timer _timer;
+        public static Timer _timer;
 
         public int _setupSpeed;
         private int _speed;
@@ -56,13 +47,11 @@ namespace Tetris
 
         private void TimerCallback(object sender)
         {
-            if (figureFalling && CanMoveOrPlace(_currFigure, _currRotState, _currFigPos, new Point(0, 1)))
-            { 
-            }
-            else
+            if (!(figureFalling && CanMoveOrPlace(_currFigure, _currRotState, _currFigPos, new Point(0, 1))))
             {
-                figureFalling = false;
                 //figure fall down - check compleeted rows
+                figureFalling = false;
+                
                 for (int i = _maxY - 1; i >= 0; i--)
                 {
                     if (IsRowComplete(i))
@@ -70,30 +59,36 @@ namespace Tetris
                         //Delete row
                         DeleteRow(i);
                         ShiftFieldContence(i - 1);
+                        i++;
                     }
                 }
             }
 
             if (!figureFalling)
-            {
-                _currRotState = 0;
-                _currFigure = Figures.figs[_currRotState];
-                _currFigPos = new Point(_maxX / 2, 0);
-                figureFalling = true;
-            }
+                InstantiateNewFigure();
+
             OnRedraw?.Invoke(this, new GameEngineEventArgs(field, Score));
+        }
+        
+        private void InstantiateNewFigure()
+        {
+            _currRotState = 0;
+            var rndFigure = new Random();
+            _currFigure = Figures.figs[rndFigure.Next(Figures.figs.Count)];
+            _currFigPos = new Point(_maxX / 2, 1);
+            figureFalling = true;
+            if (!CanMoveOrPlace(_currFigure, _currRotState, _currFigPos, new Point(0, 0)))
+            { 
+                OnGameOver?.Invoke(this, new GameEngineEventArgs(field, Score));
+                _timer.Change(Timeout.Infinite, Timeout.Infinite);
+            }
         }
 
         public void StartGame()
         {
-            _currRotState = 0;
-            _currFigure = Figures.figs[_currRotState];
-            _currFigPos = new Point(_maxX/2, 0);
-            CanMoveOrPlace(_currFigure, _currRotState, _currFigPos, new Point(0, 0));
-            figureFalling = true;
+            InstantiateNewFigure();
 
             _timer = new Timer(TimerCallback, null, 0, _setupSpeed);
-            
         }
 
         void DeleteRow(int row)
@@ -102,26 +97,14 @@ namespace Tetris
                 field[row, i] = false;
         }
 
-        void RowShift(int row)
-        {
-            for (int i = 0; i < _maxX; i++)
-            {
-                field[row - 1, i] = field[row, i];
-            }
-        }
-
-        void ShiftFieldContence(int row)
+        private void ShiftFieldContence(int row)
         {
             for (int i = row; i >=0; i--)
-            {
                 for (int j = 0; j < _maxX; j++)
-                {
-                        field[i+1, j] = field[i, j];
-                }
-            }
+                    field[i+1, j] = field[i, j];
         }
 
-        public bool IsRowComplete(int row)
+        private bool IsRowComplete(int row)
         {
             for (var i = 0; i < _maxX; i++)
                 if (!field[row,i]) return false;
@@ -131,17 +114,11 @@ namespace Tetris
         public bool[,] getField() =>
             field;
 
-        private bool IsXValid(int input) =>
-            input >=0 && input < _maxX;
-
-        private bool IsYValid(int input) =>
-            input >= 0 && input < _maxY;
-
         private bool IsValid(Point point) =>
             (point.X >= 0 && point.X < _maxX) &&
             (point.Y >= 0 && point.Y < _maxY);
 
-        private bool CanMoveOrPlace(List<Point> figure,int currRotState, Point currRefPos, Point delta)
+        private bool CanMoveOrPlace(List<List<Point>> figure,int currRotState, Point currRefPos, Point delta)
         {
             var draw = new List<Point>();
             var erase = new List<Point>();
@@ -158,7 +135,7 @@ namespace Tetris
                 delta.Y = 0;
             }
 
-            var figPoints = Figures.figs[newRotState];
+            var figPoints = figure[newRotState];
             var newRefPosX = currRefPos.X + delta.X;
             var newRefPosY = currRefPos.Y + delta.Y;
 
@@ -166,8 +143,8 @@ namespace Tetris
             if (delta.X != 0 || delta.Y != 0 || rotation)
                 for (int i = 0; i < figPoints.Count; i++)
                 {
-                    var xOld = currRefPos.X + Figures.figs[currRotState][i].X;
-                    var yOld = currRefPos.Y + Figures.figs[currRotState][i].Y;
+                    var xOld = currRefPos.X + figure[currRotState][i].X;
+                    var yOld = currRefPos.Y + figure[currRotState][i].Y;
 
                     erase.Add(new Point(xOld, yOld));
                 }

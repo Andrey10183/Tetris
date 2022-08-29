@@ -7,44 +7,15 @@ using System.Threading.Tasks;
 
 namespace Tetris
 {
-    internal static class Figures
+    internal class Figures
     {
-        public static Dictionary<string, List<bool[,]>> figures = new Dictionary<string, List<bool[,]>>
-        {
-            { "Lshape", new List<bool[,]>()
-                {
-                    new bool[3,3]
-                    {
-                        { false, true, true },
-                        { false, true, false },
-                        { false, true, false }
-                    },
-                    new bool[3,3]
-                    {
-                        { false, false, false },
-                        { true, true, true },
-                        { false, false, true }
-                    },
-                    new bool[3,3]
-                    {
-                        { false, true, false },
-                        { false, true, false },
-                        { true, true, false }
-                    },
-                    new bool[3,3]
-                    {
-                        { true, false, false },
-                        { true, true, true },
-                        { false, false, false }
-                    }
-                }
-            },
-        };
 
-        public static List<List<Point>> figs = new List<List<Point>>() 
-        {             
+        public static List<List<List<Point>>> figs = new List<List<List<Point>>>() 
+        {
+            new List<List<Point>>()//L-shape - 0
+            {
                 new List<Point>()
-                { 
+                {
                     new Point(0,0),
                     new Point(-1,0),
                     new Point(1,0),
@@ -71,6 +42,130 @@ namespace Tetris
                     new Point(1,-1),
                     new Point(0,1)
                 }
+            },
+            new List<List<Point>>()//L-shape Reverse - 1
+            {
+                new List<Point>()
+                {
+                    new Point(0,0),
+                    new Point(-1,0),
+                    new Point(1,0),
+                    new Point(-1,1)
+                },
+                new List<Point>()
+                {
+                    new Point(0,0),
+                    new Point(0,-1),
+                    new Point(0,1),
+                    new Point(-1,-1)
+                },
+                new List<Point>()
+                {
+                    new Point(0,0),
+                    new Point(-1,0),
+                    new Point(1,0),
+                    new Point(1,-1)
+                },
+                new List<Point>()
+                {
+                    new Point(0,0),
+                    new Point(0,-1),
+                    new Point(0,1),
+                    new Point(1,1)
+                }
+            },
+            new List<List<Point>>()//Qube - 2
+            {
+                new List<Point>()
+                {
+                    new Point(0,0),
+                    new Point(0,1),
+                    new Point(1,0),
+                    new Point(1,1)
+                }
+            },
+            new List<List<Point>>()//Flash -3 
+            {
+                new List<Point>()
+                {
+                    new Point(0,0),
+                    new Point(0,-1),
+                    new Point(-1,-1),
+                    new Point(1,0)
+                },
+                new List<Point>()
+                {
+                    new Point(0,0),
+                    new Point(1,0),
+                    new Point(1,-1),
+                    new Point(0,1)
+                }
+            },
+            new List<List<Point>>()//Flash reverse
+            {
+                new List<Point>()
+                {
+                    new Point(0,0),
+                    new Point(0,-1),
+                    new Point(1,-1),
+                    new Point(-1,0)
+                },
+                new List<Point>()
+                {
+                    new Point(0,0),
+                    new Point(-1,0),
+                    new Point(-1,-1),
+                    new Point(0,1)
+                }
+            },
+            new List<List<Point>>()//T-shape
+            {
+                new List<Point>()
+                {
+                    new Point(0,0),
+                    new Point(-1,0),
+                    new Point(1,0),
+                    new Point(0,-1)
+                },
+                new List<Point>()
+                {
+                    new Point(0,0),
+                    new Point(0,-1),
+                    new Point(0,1),
+                    new Point(1,0)
+                },
+                new List<Point>()
+                {
+                    new Point(0,0),
+                    new Point(-1,0),
+                    new Point(1,0),
+                    new Point(0,1)
+                },
+                new List<Point>()
+                {
+                    new Point(0,0),
+                    new Point(-1,0),
+                    new Point(0,-1),
+                    new Point(0,1)
+                }
+            },
+            new List<List<Point>>()//line
+            {
+                new List<Point>()
+                {
+                    new Point(0,0),
+                    new Point(-1,0),
+                    new Point(-2,0),
+                    new Point(1,0)
+                },
+                new List<Point>()
+                {
+                    new Point(0,0),
+                    new Point(0,-1),
+                    new Point(0,1),
+                    new Point(0,2)
+                }
+            }
 
         };
     }

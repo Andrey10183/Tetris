@@ -4,33 +4,47 @@
     {
         private TetrisEngine tetrisEngine;
         private Display display;
-        private static GameInfo gameInfo;
         private bool[,] field;
         public int score;
+        private int currScoreLimit;
+        private bool gameOver = false;
 
         public GameController(TetrisEngine tetrisEngine, Display display)
         {
             this.tetrisEngine = tetrisEngine;
             this.display = display;
-            gameInfo = new GameInfo() { gameField = tetrisEngine.getField(), score = 0 };
 
             this.tetrisEngine.OnRedraw += Draw;
-            this.tetrisEngine.OnScoreEarned += ScoreEarned;            
+            this.tetrisEngine.OnScoreEarned += ScoreEarned;
+            this.tetrisEngine.OnGameOver += GameOver;
         }
 
-        public GameInfo GetGameInfo() =>
-            gameInfo;
+        private void GameOver(TetrisEngine sender, GameEngineEventArgs e)
+        {
+            
+            if (display.ShowDialogForm("GAME OVER!", "RESTART?"))
+            {
+                currScoreLimit = 1000;
+                score = 0;
+                gameOver = false;
+                tetrisEngine.StartGame();
+            }
+            else
+                gameOver = true;
+        }
 
         private void ScoreEarned(TetrisEngine sender, GameEngineEventArgs e)
         {
-            gameInfo.score += 100 * e._rowsCompleeted * e._rowsCompleeted;
+            score += 100 * e._rowsCompleeted * e._rowsCompleeted;
+            display.SetScore(score);
         }
             
         public void Start()
         {
+            currScoreLimit = 1000;
             tetrisEngine.StartGame();
             
-            while (true)
+            while (!gameOver)
             {
                 ConsoleKey keyPressed;
                 if (Console.KeyAvailable)
@@ -44,6 +58,7 @@
                     case ConsoleKey.LeftArrow: tetrisEngine.MoveLeft(); break;
                     case ConsoleKey.Spacebar: tetrisEngine.Rotate(); break;
                     case ConsoleKey.DownArrow: tetrisEngine.Speed = 50; break;
+                    case ConsoleKey.Escape: tetrisEngine.PauseResume(); break;
                     default:
                         tetrisEngine.Speed = tetrisEngine._setupSpeed;
                         break;
@@ -53,8 +68,16 @@
 
         private void Draw(TetrisEngine sender, GameEngineEventArgs e)
         {
-            gameInfo.gameField = e._gamefield;
-            display.Draw();          
+            if (!gameOver) display.Draw();          
+        }
+
+        private void GameSpeedControl(int currScore)
+        {
+            if (currScore >= currScoreLimit)
+            {
+                tetrisEngine._setupSpeed -= 100;
+                currScoreLimit += 1000;
+            }
         }
     }
 }

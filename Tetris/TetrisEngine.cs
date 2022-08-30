@@ -18,6 +18,7 @@ namespace Tetris
         private List<List<Point>> currentFigurePositions;
         private Point currentFigurePosition;
         private bool figureFalling = false;
+        private bool gamePaused;
 
         public static Timer _timer;
 
@@ -46,6 +47,8 @@ namespace Tetris
 
         private void NextFrame(object sender)
         {
+            if (gamePaused) return;
+            
             if (!(figureFalling && CanMoveOrPlace(currentFigurePositions, currentRotationState, currentFigurePosition, new Point(0, 1))))
             {
                 //figure fall down - check compleeted rows
@@ -65,10 +68,10 @@ namespace Tetris
                 if (rowsCompleted > 0) OnScoreEarned?.Invoke(this, new GameEngineEventArgs(field, rowsCompleted));
             }
 
-            if (!figureFalling)
+            if (!figureFalling && !gamePaused)
                 InstantiateNewFigure();
 
-            OnRedraw?.Invoke(this, new GameEngineEventArgs(field));
+            if (!gamePaused) OnRedraw?.Invoke(this, new GameEngineEventArgs(field));
         }
         
         private void InstantiateNewFigure()
@@ -78,17 +81,25 @@ namespace Tetris
             currentFigurePosition = new Point(width / 2, 1);
             figureFalling = true;
             if (!CanMoveOrPlace(currentFigurePositions, currentRotationState, currentFigurePosition, new Point(0, 0)))
-            { 
-                OnGameOver?.Invoke(this, new GameEngineEventArgs(field));
-                _timer.Change(Timeout.Infinite, Timeout.Infinite);
+            {
+                Pause();
+                OnGameOver?.Invoke(this, new GameEngineEventArgs(field));                
             }
         }
 
         public void StartGame()
-        {
-            InstantiateNewFigure();
-
+        {           
+            Clear();
+            gamePaused = false;
+            InstantiateNewFigure();            
             _timer = new Timer(NextFrame, null, 0, _setupSpeed);
+        }
+
+        public void Restart()
+        {
+            Clear();            
+            Resume();
+            InstantiateNewFigure();
         }
 
         void DeleteRow(int row)
@@ -179,22 +190,70 @@ namespace Tetris
                 field[data[i].Y, data[i].X] = value;
         }
 
+        private void Clear()
+        {
+            var upper0 = field.GetUpperBound(0)+1;
+            var upper1 = field.GetUpperBound(1)+1;
+
+
+
+            for (int i = 0; i < upper0; i++)
+                for (int j = 0;j < upper1; j++)
+                    field[i,j] = false;
+        }
+
         public void MoveRight()
         {
-            CanMoveOrPlace(currentFigurePositions, currentRotationState, currentFigurePosition, new Point(1, 0));
-            OnRedraw?.Invoke(this, new GameEngineEventArgs(field));
+            if (!gamePaused)
+            {
+                CanMoveOrPlace(currentFigurePositions, currentRotationState, currentFigurePosition, new Point(1, 0));
+                OnRedraw?.Invoke(this, new GameEngineEventArgs(field));
+            }
+            
         }
 
         public void MoveLeft()
         {
-            CanMoveOrPlace(currentFigurePositions, currentRotationState, currentFigurePosition, new Point(-1, 0));
-            OnRedraw?.Invoke(this, new GameEngineEventArgs(field));
+            if (!gamePaused)
+            {
+                CanMoveOrPlace(currentFigurePositions, currentRotationState, currentFigurePosition, new Point(-1, 0));
+                OnRedraw?.Invoke(this, new GameEngineEventArgs(field));
+            }
         }
 
         public void Rotate()
         {
-            CanMoveOrPlace(currentFigurePositions, currentRotationState, currentFigurePosition, new Point(1, 1));
-            OnRedraw?.Invoke(this, new GameEngineEventArgs(field));
+            if (!gamePaused)
+            {
+                CanMoveOrPlace(currentFigurePositions, currentRotationState, currentFigurePosition, new Point(1, 1));
+                OnRedraw?.Invoke(this, new GameEngineEventArgs(field));
+            }
+        }
+
+        public void PauseResume()
+        {
+            if (gamePaused)
+            {
+                _timer.Change(0, _setupSpeed);
+                gamePaused = false;
+            }
+            else 
+            {
+                _timer.Change(Timeout.Infinite, Timeout.Infinite);
+                gamePaused = true;
+            }            
+        }
+
+        public void Pause()
+        {
+            _timer.Change(Timeout.Infinite, Timeout.Infinite);
+            gamePaused = true;
+        }
+
+        public void Resume()
+        {
+            _timer.Change(0, _setupSpeed);
+            gamePaused = false;
         }
     }
 }

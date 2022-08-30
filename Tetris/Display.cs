@@ -8,14 +8,14 @@ namespace Tetris
         private bool[,] gameField;
         private int width;
         private int height;
+
+        private int windowWidth;
+        private int windowHeight;
+
         private int offsetWidth;
         private int offsetHeight;
         private bool drawingInProcess;
-        private string fieldFrameColor = Colors.BG_ORANGE;
-        private string gameObjectColor = Colors.BG_GREEN;
-        private Dictionary<string, GameInfo> textOutput;  
-
-        private int color;
+        private int score;
         private int heightControl;
 
         const int STD_OUTPUT_HANDLE = -11;
@@ -31,22 +31,90 @@ namespace Tetris
         [DllImport("kernel32.dll")]
         static extern bool SetConsoleMode(IntPtr hConsoleHandle, uint dwMode);
 
-        public Display(GameInfo gameInfo,int width, int height, int offsetWidth = 4, int offsetHeight = 4)
+        public Display(bool[,] gameField,int width, int height, int offsetWidth = 4, int offsetHeight = 4)
         {
             this.width = width;
             this.height = height;
             this.offsetWidth = offsetWidth;
             this.offsetHeight = offsetHeight;
-            this.gameField = gameInfo.gameField;
+            this.gameField = gameField;
 
             SequencesEnable();
             DisplayInitialization();
         }
+        
+        public void SetScore(int score) =>
+            this.score = score;
 
-        public void SetupText(Dictionary<string, GameInfo> input)
+        public void Draw()
         {
-            textOutput = input;
-            DisplayInitialization();
+            if (!drawingInProcess)
+            {
+                heightControl = 0;
+                drawingInProcess = true;
+                Console.SetCursorPosition(0, 0);
+                var screenImage = new StringBuilder();
+                screenImage = screenImage.Append(Colors.REDUCE_BRIGHT);
+
+                DrawHeightOffset(screenImage);
+                
+                DrawWidthOffset(screenImage);
+                screenImage.Append(Colors.FG_ORANGE+ "SCORE: " + score + '\n');
+                                                           
+                DrawWidthOffset(screenImage);                
+                DrawHorizontalFieldFrame(screenImage);
+               
+                for (int y = 0; y < height; y++)
+                {
+                    DrawWidthOffset(screenImage);
+                    DrawVerticalFieldFrame(screenImage);
+
+                    for (int x = 0; x < width; x++)
+                        screenImage.Append(gameField[y, x] ? (GetColorFigure(x,heightControl) + "  " + Colors.RESET) : "  ");
+
+                    DrawVerticalFieldFrame(screenImage);
+                    screenImage.Append('\n');
+                }
+                DrawWidthOffset(screenImage);
+                DrawHorizontalFieldFrame(screenImage);
+
+                Console.Write(screenImage);
+                drawingInProcess = false;
+            }
+        }
+
+        public bool ShowDialogForm(string message, string query)
+        {
+            var offsetX = 6;
+            var offsetY = 2;
+            var xPos = (windowWidth - message.Length) / 2;
+            var yPos = (windowHeight - 1) / 2;
+            var wWidth = message.Length + offsetX * 2;
+            var wHeight = 2 + offsetY * 2;
+            var screen = new StringBuilder();
+            query += " (Y/N)";
+
+            for (int i = 0; i < wHeight; i++)
+            {
+                for (int j = 0; j < wWidth; j++)
+                {
+                    screen.Append(Colors.BG_ORANGE + " ");
+                }
+                Console.SetCursorPosition(xPos - offsetX, yPos - offsetY + i);
+                Console.Write(screen);
+                screen.Clear();
+            }
+            Console.Write(screen);
+            Console.SetCursorPosition(xPos, yPos);
+            Console.Write(message);
+            Console.SetCursorPosition(GetCenteredPosition(query), yPos + 1);
+            Console.CursorVisible = true;
+            Console.Write(query);
+            var input = Console.ReadLine();
+            Console.CursorVisible = false;
+            Console.WriteLine(Colors.RESET);
+
+            return (input == "y" || input == "Y");
         }
 
         // Set output mode to handle virtual terminal sequences
@@ -61,58 +129,13 @@ namespace Tetris
 
         private void DisplayInitialization()
         {
-            //if (textOutput != null)
-            var coorectionHeight = textOutput != null ? textOutput.Count : 0;
-            var windowWidth = width * 2 + offsetWidth * 4;
-            var windowHeight = height + offsetHeight*2 + coorectionHeight;
+            windowWidth = width * 2 + offsetWidth * 4;
+            windowHeight = height + offsetHeight * 2;
 
             Console.SetWindowSize(1, 1);
             Console.SetBufferSize(windowWidth + 1, windowHeight + 1);
             Console.SetWindowSize(windowWidth, windowHeight);
             Console.CursorVisible = false;
-        }
-
-        public void Draw()
-        {
-            if (!drawingInProcess)
-            {
-                heightControl = 0;
-                drawingInProcess = true;
-                Console.SetCursorPosition(0, 0);
-                var s1 = new StringBuilder();
-                s1 = s1.Append(Colors.REDUCE_BRIGHT);
-
-                DrawHeightOffset(s1);
-
-                if (textOutput.Count > 0)
-                    foreach (var item in textOutput)
-                    {
-                        DrawWidthOffset(s1);
-                        s1.Append(item.Key + ": " + item.Value.score + '\n');
-                    }
-                                       
-                DrawWidthOffset(s1);
-                
-                DrawHorizontalFieldFrame(s1);
-               
-                for (int y = 0; y < height; y++)
-                {
-                    DrawWidthOffset(s1);
-                    DrawVerticalFieldFrame(s1);
-                    for (int x = 0; x < width; x++)
-                    {
-                        s1.Append(gameField[y, x] ? (GetColorFigs(x,heightControl) + "  " + Colors.RESET) : "  ");
-                    }
-
-                    DrawVerticalFieldFrame(s1);
-                    s1.Append('\n');
-                }
-                DrawWidthOffset(s1);
-                DrawHorizontalFieldFrame(s1);
-
-                Console.Write(s1);
-                drawingInProcess = false;
-            }
         }
 
         private void DrawHeightOffset(StringBuilder input)
@@ -131,24 +154,27 @@ namespace Tetris
         private void DrawHorizontalFieldFrame(StringBuilder input)
         {
             for (int i = 0; i < width * 2 + 4; i++)
-                input.Append(GetColor(heightControl) + " " + Colors.RESET);
+                input.Append(GetColorFrame(heightControl) + " " + Colors.RESET);
             input.Append('\n');
             heightControl++;
         }
 
         private void DrawVerticalFieldFrame(StringBuilder input)
         {
-            input.Append(GetColor(heightControl++) + "  " + Colors.RESET);
+            input.Append(GetColorFrame(heightControl++) + "  " + Colors.RESET);
         }
 
-        private string GetColor(int y)
+        private string GetColorFrame(int y)
         {
             return "\u001b[48;2;210;140;" + ((y*255)/height) + "m";
         }
 
-        private string GetColorFigs(int x, int y)
+        private string GetColorFigure(int x, int y)
         {
             return "\u001b[48;2;60;"+((x * 255) / height) +";"+ ((y * 255) / height) + "m";
         }
+
+        private int GetCenteredPosition(string message)=>
+            (windowWidth - message.Length) / 2;
     }
 }

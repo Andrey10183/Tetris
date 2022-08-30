@@ -3,6 +3,6 @@
     internal class GameInfo
     {
         public bool[,] gameField;
-        public int score;
+        public string score;
     }
 }

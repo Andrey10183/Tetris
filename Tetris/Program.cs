@@ -7,14 +7,8 @@ const int height = 20;
 var tetris = new TetrisEngine(width, height, 500);
 
 
-var display = new Display(new GameInfo() {gameField = tetris.getField()}, width, height);
+var display = new Display(tetris.getField(), width, height);
 var gameController = new GameController(tetris, display);
 
-var text = new Dictionary<string, GameInfo>() 
-{ 
-    { "SCORE", gameController.GetGameInfo() }
-};
-
-display.SetupText(text);
 gameController.Start();
 

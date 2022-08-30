@@ -4,7 +4,6 @@
     {
         private TetrisEngine tetrisEngine;
         private Display display;
-        private bool[,] field;
         public int score;
         private int currScoreLimit;
         private bool gameOver = false;
@@ -18,32 +17,11 @@
             this.tetrisEngine.OnScoreEarned += ScoreEarned;
             this.tetrisEngine.OnGameOver += GameOver;
         }
-
-        private void GameOver(TetrisEngine sender, GameEngineEventArgs e)
-        {
-            
-            if (display.ShowDialogForm("GAME OVER!", "RESTART?"))
-            {
-                currScoreLimit = 1000;
-                score = 0;
-                gameOver = false;
-                tetrisEngine.StartGame();
-            }
-            else
-                gameOver = true;
-        }
-
-        private void ScoreEarned(TetrisEngine sender, GameEngineEventArgs e)
-        {
-            score += 100 * e._rowsCompleeted * e._rowsCompleeted;
-            display.SetScore(score);
-        }
-            
+                    
         public void Start()
         {
-            currScoreLimit = 1000;
-            tetrisEngine.StartGame();
-            
+            ResetAndStartGame();
+
             while (!gameOver)
             {
                 ConsoleKey keyPressed;
@@ -57,13 +35,28 @@
                     case ConsoleKey.RightArrow: tetrisEngine.MoveRight(); break;
                     case ConsoleKey.LeftArrow: tetrisEngine.MoveLeft(); break;
                     case ConsoleKey.Spacebar: tetrisEngine.Rotate(); break;
-                    case ConsoleKey.DownArrow: tetrisEngine.Speed = 50; break;
+                    case ConsoleKey.DownArrow: tetrisEngine.IncreaseFallSpeed(); break;
                     case ConsoleKey.Escape: tetrisEngine.PauseResume(); break;
                     default:
-                        tetrisEngine.Speed = tetrisEngine._setupSpeed;
+                        tetrisEngine.RestoreSpeed();
                         break;
                 }
             }
+        }
+
+        private void GameOver(TetrisEngine sender, GameEngineEventArgs e)
+        {
+            if (display.ShowDialogForm("GAME OVER!", "RESTART?"))
+                ResetAndStartGame();
+            else
+                gameOver = true;
+        }
+
+        private void ScoreEarned(TetrisEngine sender, GameEngineEventArgs e)
+        {
+            score += 100 * e._rowsCompleeted * e._rowsCompleeted;
+            GameSpeedControl(score);
+            display.SetScore(score);
         }
 
         private void Draw(TetrisEngine sender, GameEngineEventArgs e)
@@ -75,9 +68,18 @@
         {
             if (currScore >= currScoreLimit)
             {
-                tetrisEngine._setupSpeed -= 100;
-                currScoreLimit += 1000;
+                tetrisEngine.currentSpeed -= 50;
+                currScoreLimit += 2000;
             }
+        }
+
+        private void ResetAndStartGame()
+        {
+            currScoreLimit = 1000;
+            score = 0;
+            gameOver = false;
+            display.SetScore(0);
+            tetrisEngine.StartGame();
         }
     }
 }

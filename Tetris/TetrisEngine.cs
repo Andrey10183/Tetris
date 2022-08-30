@@ -22,16 +22,19 @@ namespace Tetris
 
         public static Timer _timer;
 
-        public int _setupSpeed;
-        private int _speed;
-        public int Speed 
+        public int currentSpeed;
+        private int initialSpeed;
+        private int maxFallSpeed = 50;
+
+        private int speed;       
+        private int Speed 
         { 
-            get { return _speed; }
+            get { return speed; }
             set 
             {
-                if (value != _speed)
+                if (value != speed)
                 {
-                    _speed = value;
+                    speed = value;
                     _timer.Change(0, value);
                 }    
             } 
@@ -41,7 +44,8 @@ namespace Tetris
         {
             this.width = width;
             this.height = height;
-            _setupSpeed = initialspeed;
+            //currentSpeed = initialspeed;
+            this.initialSpeed = currentSpeed = initialspeed;
             field = new bool[height,width];
         }
 
@@ -68,10 +72,10 @@ namespace Tetris
                 if (rowsCompleted > 0) OnScoreEarned?.Invoke(this, new GameEngineEventArgs(field, rowsCompleted));
             }
 
-            if (!figureFalling && !gamePaused)
+            if (!figureFalling)
                 InstantiateNewFigure();
 
-            if (!gamePaused) OnRedraw?.Invoke(this, new GameEngineEventArgs(field));
+            OnRedraw?.Invoke(this, new GameEngineEventArgs(field));
         }
         
         private void InstantiateNewFigure()
@@ -92,7 +96,8 @@ namespace Tetris
             Clear();
             gamePaused = false;
             InstantiateNewFigure();            
-            _timer = new Timer(NextFrame, null, 0, _setupSpeed);
+            _timer = new Timer(NextFrame, null, 0, currentSpeed);
+            Speed = initialSpeed;
         }
 
         public void Restart()
@@ -195,8 +200,6 @@ namespace Tetris
             var upper0 = field.GetUpperBound(0)+1;
             var upper1 = field.GetUpperBound(1)+1;
 
-
-
             for (int i = 0; i < upper0; i++)
                 for (int j = 0;j < upper1; j++)
                     field[i,j] = false;
@@ -208,8 +211,7 @@ namespace Tetris
             {
                 CanMoveOrPlace(currentFigurePositions, currentRotationState, currentFigurePosition, new Point(1, 0));
                 OnRedraw?.Invoke(this, new GameEngineEventArgs(field));
-            }
-            
+            }           
         }
 
         public void MoveLeft()
@@ -230,18 +232,18 @@ namespace Tetris
             }
         }
 
+        public void IncreaseFallSpeed() =>
+            Speed = maxFallSpeed;
+
+        public void RestoreSpeed() =>
+            Speed = currentSpeed;
+
         public void PauseResume()
         {
             if (gamePaused)
-            {
-                _timer.Change(0, _setupSpeed);
-                gamePaused = false;
-            }
-            else 
-            {
-                _timer.Change(Timeout.Infinite, Timeout.Infinite);
-                gamePaused = true;
-            }            
+                Resume();
+            else
+                Pause();            
         }
 
         public void Pause()
@@ -252,7 +254,7 @@ namespace Tetris
 
         public void Resume()
         {
-            _timer.Change(0, _setupSpeed);
+            _timer.Change(0, currentSpeed);
             gamePaused = false;
         }
     }

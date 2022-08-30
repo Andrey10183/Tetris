@@ -85,6 +85,9 @@ namespace Tetris
 
         public bool ShowDialogForm(string message, string query)
         {
+            if (drawingInProcess)
+                while (drawingInProcess);
+
             var offsetX = 6;
             var offsetY = 2;
             var xPos = (windowWidth - message.Length) / 2;
@@ -96,12 +99,11 @@ namespace Tetris
 
             for (int i = 0; i < wHeight; i++)
             {
-                for (int j = 0; j < wWidth; j++)
-                {
-                    screen.Append(Colors.BG_ORANGE + " ");
-                }
-                Console.SetCursorPosition(xPos - offsetX, yPos - offsetY + i);
-                Console.Write(screen);
+                for (int j = 0; j < windowWidth; j++)
+                    screen.Append(" ");
+
+                Console.SetCursorPosition(0, yPos - offsetY + i);
+                Console.Write(GetColorDialog(i, wHeight) + screen);
                 screen.Clear();
             }
             Console.Write(screen);
@@ -113,6 +115,7 @@ namespace Tetris
             var input = Console.ReadLine();
             Console.CursorVisible = false;
             Console.WriteLine(Colors.RESET);
+            Console.Clear();
 
             return (input == "y" || input == "Y");
         }
@@ -159,22 +162,19 @@ namespace Tetris
             heightControl++;
         }
 
-        private void DrawVerticalFieldFrame(StringBuilder input)
-        {
+        private void DrawVerticalFieldFrame(StringBuilder input) =>
             input.Append(GetColorFrame(heightControl++) + "  " + Colors.RESET);
-        }
 
-        private string GetColorFrame(int y)
-        {
-            return "\u001b[48;2;210;140;" + ((y*255)/height) + "m";
-        }
+        private string GetColorFrame(int y) =>
+            "\u001b[48;2;210;140;" + ((y*255)/height) + "m";
 
-        private string GetColorFigure(int x, int y)
-        {
-            return "\u001b[48;2;60;"+((x * 255) / height) +";"+ ((y * 255) / height) + "m";
-        }
+        private string GetColorDialog(int y, int height) =>
+            "\u001b[48;2;30;100;" + ((y * 255) / height) + "m";
 
-        private int GetCenteredPosition(string message)=>
+        private string GetColorFigure(int x, int y) =>
+            "\u001b[48;2;60;"+((x * 255) / height) +";"+ ((y * 255) / height) + "m";
+
+        private int GetCenteredPosition(string message) =>
             (windowWidth - message.Length) / 2;
     }
 }

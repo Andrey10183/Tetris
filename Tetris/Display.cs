@@ -11,15 +11,17 @@ namespace Tetris
 
         private int windowWidth;
         private int windowHeight;
-
-        private int offsetWidth;
-        private int offsetHeight;
+       
         private bool drawingInProcess;
         private int score;
+        private int bestScore;
         private int heightControl;
 
-        const int STD_OUTPUT_HANDLE = -11;
-        const uint ENABLE_VIRTUAL_TERMINAL_PROCESSING = 4;
+        private const int offsetWidth = 4;
+        private const int offsetHeight = 4;
+
+        private const int STD_OUTPUT_HANDLE = -11;
+        private const uint ENABLE_VIRTUAL_TERMINAL_PROCESSING = 4;
 
         //Libraries importing
         [DllImport("kernel32.dll", SetLastError = true)]
@@ -31,36 +33,41 @@ namespace Tetris
         [DllImport("kernel32.dll")]
         static extern bool SetConsoleMode(IntPtr hConsoleHandle, uint dwMode);
 
-        public Display(bool[,] gameField,int width, int height, int offsetWidth = 4, int offsetHeight = 4)
+        public Display(bool[,] gameField)
         {
-            this.width = width;
-            this.height = height;
-            this.offsetWidth = offsetWidth;
-            this.offsetHeight = offsetHeight;
+            width = gameField.GetUpperBound(1)+1;
+            height = gameField.GetUpperBound(0)+1;
             this.gameField = gameField;
 
-            SequencesEnable();
+            //SequencesEnable();
             DisplayInitialization();
         }
         
         public void SetScore(int score) =>
             this.score = score;
 
+        public void SetBestScore(int score) =>
+            this.bestScore = score;
+
         public void Draw()
         {
+            //while (drawingInProcess) ;
+
             if (!drawingInProcess)
-            {
-                heightControl = 0;
+            {                
                 drawingInProcess = true;
+                heightControl = 0;
                 Console.SetCursorPosition(0, 0);
                 var screenImage = new StringBuilder();
-                screenImage = screenImage.Append(Colors.REDUCE_BRIGHT);
+                //screenImage = screenImage.Append(Colors.REDUCE_BRIGHT);
 
                 DrawHeightOffset(screenImage);
                 
                 DrawWidthOffset(screenImage);
                 screenImage.Append(Colors.FG_ORANGE+ "SCORE: " + score + '\n');
-                                                           
+                DrawWidthOffset(screenImage);
+                screenImage.Append(Colors.FG_ORANGE + "BEST SCORE: " + bestScore + '\n');
+
                 DrawWidthOffset(screenImage);                
                 DrawHorizontalFieldFrame(screenImage);
                
@@ -85,8 +92,7 @@ namespace Tetris
 
         public bool ShowDialogForm(string message, string query)
         {
-            if (drawingInProcess)
-                while (drawingInProcess);
+            while (drawingInProcess);
 
             var offsetX = 6;
             var offsetY = 2;
@@ -133,7 +139,7 @@ namespace Tetris
         private void DisplayInitialization()
         {
             windowWidth = width * 2 + offsetWidth * 4;
-            windowHeight = height + offsetHeight * 2;
+            windowHeight = height + 2 + offsetHeight * 2;
 
             Console.SetWindowSize(1, 1);
             Console.SetBufferSize(windowWidth + 1, windowHeight + 1);
@@ -143,7 +149,7 @@ namespace Tetris
 
         private void DrawHeightOffset(StringBuilder input)
         {
-            for (int i = 0; i<offsetHeight; i++)
+            for (int i = 0; i<offsetHeight-1; i++)
                 input.Append('\n');
         }
 

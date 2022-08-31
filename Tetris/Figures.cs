@@ -4,7 +4,6 @@ namespace Tetris
 {
     internal class Figures
     {
-
         public static List<List<List<Point>>> figs = new List<List<List<Point>>>() 
         {
             new List<List<Point>>()//L-shape - 0
@@ -161,7 +160,6 @@ namespace Tetris
                     new Point(0,2)
                 }
             }
-
         };
     }
 }

@@ -1,14 +1,17 @@
-﻿namespace Tetris
+﻿using System.Configuration;
+
+namespace Tetris
 {
-    internal class GameController
+    internal class TetrisGameController
     {
         private TetrisEngine tetrisEngine;
         private Display display;
         public int score;
+        public int bestScore;
         private int currScoreLimit;
         private bool gameOver = false;
 
-        public GameController(TetrisEngine tetrisEngine, Display display)
+        public TetrisGameController(TetrisEngine tetrisEngine, Display display)
         {
             this.tetrisEngine = tetrisEngine;
             this.display = display;
@@ -16,6 +19,9 @@
             this.tetrisEngine.OnRedraw += Draw;
             this.tetrisEngine.OnScoreEarned += ScoreEarned;
             this.tetrisEngine.OnGameOver += GameOver;
+
+            bestScore = int.Parse(ReadConfigValue("BestScore"));
+            display.SetBestScore(bestScore);
         }
                     
         public void Start()
@@ -56,7 +62,15 @@
         {
             score += 100 * e._rowsCompleeted * e._rowsCompleeted;
             GameSpeedControl(score);
+
+            if (bestScore < score)
+            {
+                bestScore = score;
+                WriteConfigValue("BestScore", bestScore.ToString());
+            }
+                
             display.SetScore(score);
+            display.SetBestScore(bestScore);
         }
 
         private void Draw(TetrisEngine sender, GameEngineEventArgs e)
@@ -80,6 +94,39 @@
             gameOver = false;
             display.SetScore(0);
             tetrisEngine.StartGame();
+        }
+
+        private string ReadConfigValue(string key)
+        {
+            if (string.IsNullOrEmpty(key))
+                throw new ArgumentException($"\"{nameof(key)}\" не может быть неопределенным или пустым.", nameof(key));
+
+            var configFile = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
+            var settings = configFile.AppSettings.Settings;
+
+            if (settings[key] != null)
+                return settings[key].Value;
+            else 
+                return null;
+        }
+
+        private void WriteConfigValue(string key, string value)
+        {
+            if (string.IsNullOrEmpty(key))
+                throw new ArgumentException($"\"{nameof(key)}\" не может быть неопределенным или пустым.", nameof(key));
+
+            if (string.IsNullOrEmpty(value))
+                throw new ArgumentException($"\"{nameof(value)}\" не может быть неопределенным или пустым.", nameof(value));
+
+            var configFile = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
+            var settings = configFile.AppSettings.Settings;
+
+            if (settings[key] == null)
+                return;
+            
+            settings[key].Value = value;
+            configFile.Save(ConfigurationSaveMode.Modified);
+            ConfigurationManager.RefreshSection(configFile.AppSettings.SectionInformation.Name);
         }
     }
 }
